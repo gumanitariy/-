@@ -1,0 +1,160 @@
+document.addEventListener('DOMContentLoaded', () => {
+    //TEST
+    //let applicationServerKey = 'BGcQCO3jlUOY-HzXWgSG3DYyM_KtiJsj7aRSNMFU-ndHIgHhmeUAhJQShdhYCelQrHcDQXYyJEEzgqg791q2f4I';
+    //let appUUID = 'ceefdf6f-4def-4aed-ac0d-f7c1ca68dc91';
+    // master pubic key
+    let applicationServerKey = 'BMiISI0NXANuv0FLcsyf9op0-ndsD80ttToj-CENrgSRa9tHQ9UJ5V3FXMO1hdKSj-3h6wm2OYodSXUI7dWBUw8';
+    let serverUrl = 'https://push.vseosvita.ua/api/subscribe';
+    let appUUID = 'e56e5291-e134-49b7-b53e-5b08fb9edd02';
+    let isPushEnabled = false;
+
+    if (!('serviceWorker' in navigator)) {
+        console.warn('Service workers are not supported by this browser');
+        return;
+    }
+
+    if (!('PushManager' in window)) {
+        console.warn('Push notifications are not supported by this browser');
+        return;
+    }
+
+    if (!('showNotification' in ServiceWorkerRegistration.prototype)) {
+        console.warn('Notifications are not supported by this browser');
+        return;
+    }
+
+    // Check the current Notification permission.
+    // If its denied, the button should appears as such, until the user changes the permission manually
+    if (Notification.permission === 'denied') {
+        console.warn('Notifications are denied by the user');
+        return;
+    }
+
+    if (navigator.userAgent.indexOf("Edge") > -1) {
+        console.warn('Notifications not work Edge ');
+        return;
+    }
+
+    navigator.serviceWorker.register('/sw.js').then(
+        function (reg) {
+            console.log('[SW] Service worker has been registered');
+            push_updateSubscription();
+        },
+        function (e) {
+            console.error('[SW] Service worker registration failed', e);
+        }
+    );
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    function checkNotificationPermission() {
+        return new Promise((resolve, reject) => {
+            if (Notification.permission === 'denied') {
+                return reject(new Error('Push messages are blocked.'));
+            }
+
+            if (Notification.permission === 'granted') {
+                return resolve();
+            }
+
+            if (Notification.permission === 'default') {
+                return Notification.requestPermission().then(result => {
+                    if (result !== 'granted') {
+                        reject(new Error('Bad permission result'));
+                    }
+
+                    resolve();
+                });
+            }
+        });
+    }
+
+    function push_subscribe() {
+        return checkNotificationPermission()
+            .then(() => {
+                //console.log(navigator.serviceWorker.ready);
+                return navigator.serviceWorker.ready;
+            })
+            .then(serviceWorkerRegistration => {
+                    //console.log(2);
+                    return serviceWorkerRegistration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(applicationServerKey),
+                    });
+                }
+            )
+            .then(subscription => {
+                //console.log(subscription);
+                return push_sendSubscriptionToServer(subscription, 'POST');
+            })
+            .then(subscription => subscription) // update your UI
+            .catch(e => {
+                if (Notification.permission === 'denied') {
+                    console.warn('Notifications are denied by the user.');
+                } else {
+                    console.error('Impossible to subscribe to push notifications', e);
+                }
+            });
+    }
+
+    function push_updateSubscription() {
+        navigator.serviceWorker.ready
+            .then(serviceWorkerRegistration => serviceWorkerRegistration.pushManager.getSubscription())
+            .then(subscription => {
+                if (!subscription) {
+                    return;
+                }
+                return push_sendSubscriptionToServer(subscription, 'PUT');
+            })
+            .then(subscription => subscription) // Set your UI to show they have subscribed for push messages
+            .catch(e => {
+                console.error('Error when updating the subscription', e);
+            });
+    }
+
+    function push_unsubscribe() {
+        navigator.serviceWorker.ready
+            .then(serviceWorkerRegistration => serviceWorkerRegistration.pushManager.getSubscription())
+            .then(subscription => {
+                if (!subscription) {
+                    return;
+                }
+                return push_sendSubscriptionToServer(subscription, 'DELETE');
+            })
+            .then(subscription => subscription.unsubscribe())
+            .catch(e => {
+                console.error('Error when unsubscribing the user', e);
+            });
+    }
+
+    function push_sendSubscriptionToServer(subscription, method) {
+        const key = subscription.getKey('p256dh');
+        const token = subscription.getKey('auth');
+        const contentEncoding = (PushManager.supportedContentEncodings || ['aesgcm'])[0];
+
+        return fetch(serverUrl, {
+            method,
+            body: JSON.stringify({
+                endpoint: subscription.endpoint,
+                publicKey: key ? btoa(String.fromCharCode.apply(null, new Uint8Array(key))) : null,
+                authToken: token ? btoa(String.fromCharCode.apply(null, new Uint8Array(token))) : null,
+                contentEncoding,
+                uuid: appUUID || '',
+                id_user: vo.user_id || ''
+            }),
+        }).then(() => subscription);
+    }
+
+    push_subscribe();
+});

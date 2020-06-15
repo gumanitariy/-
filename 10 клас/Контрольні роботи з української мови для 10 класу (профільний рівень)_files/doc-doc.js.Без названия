@@ -1,0 +1,28 @@
+/* jshint esversion:5, strict:false */
+/* global $,vo*/
+$.fn.doc = function () {
+    return this.each(function () {
+        var $this = $(this);
+        var $body = $this.find(".v-main-presentation-body");
+
+        function scroll(obj, up) {
+            var scroll = obj.scrollTop();
+            var height = obj.height();
+            var speed = 800;
+            var newTop = up ? scroll - height : scroll + height;
+            obj.stop(true).animate({scrollTop: newTop}, speed);
+            return false;
+        }
+
+        $this.find(".to-prev").off().click(function () {
+            return scroll($body, true);
+        });
+
+        $this.find(".to-next").off().click(function () {
+            return scroll($body, false);
+        });
+
+    });
+};
+
+$(".v-main-presentation-player-doc").doc();

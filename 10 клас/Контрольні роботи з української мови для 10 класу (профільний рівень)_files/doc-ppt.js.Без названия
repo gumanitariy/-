@@ -1,0 +1,106 @@
+/* jshint esversion:5, strict:false */
+/* global $,vo*/
+$.fn.ppt = function () {
+    this.each(function () {
+        var slide = 0;
+        var $this = $(this);
+        var $body = $this.find(".v-main-presentation-body");
+        var $footer = $this.find(".v-main-presentation-footer");
+        var presentationContents = $this.next().next(".v-presentation-desc-wrap");
+        if (presentationContents.length) {
+            migratePageImages(presentationContents);
+        }
+        function migratePageImages(presentationContents) {
+            var $imgs = presentationContents.find(".v-presentation-desc-block img");
+            $imgs.off().click(function () {
+                openSlide($imgs.index(this));
+                openPopup();
+            });
+            var $slides = $imgs.map(function () {
+                return $(this).clone()[0];
+            });
+            $body.children().remove("img").remove(".v-preloader");
+            $body.prepend($slides.toArray());
+        }
+
+        var $slides = $body.find("img");
+        $footer.find(".v-numb-all").text($slides.length);
+        $body.find(".v-main-presentation-arrow-left").click(openSlideNext);
+        $body.find(".v-main-presentation-arrow-right").click(openSlidePrev);
+        function openSlideNext() {
+            openSlide((slide + 1) % $pageLinks.length);
+        }
+
+        function openSlidePrev() {
+            var n = $pageLinks.length;
+            openSlide(((slide - 1) % n + n) % n);
+        }
+
+        $body.off()
+            .click(function (e) {
+                if (e.offsetX > $(this).width() * 0.25) {
+                    openSlideNext();
+                } else {
+                    openSlidePrev();
+                }
+            });
+        $body.css({cursor: "pointer"}).hover(stopAutoSlide, startAutoSlide);
+        var $pageLinks = $slides.map(function (i) {
+            return $("<a>").attr("href", "").text(i + 1).click(function () {
+                openSlide(i);
+                return false;
+            })[0];
+        });
+        $this.find(".pagination ul").empty().append($pageLinks.map(function () {
+            return $("<li>").append(this);
+        }).toArray());
+        $this.find(".to-first").off().click(function () {
+            openSlide(0);
+            return false;
+        });
+        $this.find(".to-prev").off().click(function () {
+            openSlidePrev();
+            return false;
+        });
+        $this.find(".to-next").off().click(function () {
+            openSlideNext();
+            return false;
+        });
+        $this.find(".to-last").off().click(function () {
+            openSlide($pageLinks.length - 1);
+            return false;
+        });
+        openSlide(0);
+        function openSlide(i) {
+            slide = i;
+            $body.find("img").hide().eq(i).show();
+            $pageLinks.removeClass("active").eq(i).addClass("active");
+            $footer.find(".v-numb").text(slide + 1);
+            stopAutoSlide();
+            startAutoSlide();
+        }
+
+        function openPopup() {
+            vo.dlg.show($body.html());
+        }
+
+        var interval, delay = 5000;
+
+        function startAutoSlide() {
+            if (!interval) {
+                interval = setInterval(function () {
+                    openSlideNext();
+                }, delay);
+            }
+        }
+
+        function stopAutoSlide() {
+            clearInterval(interval);
+            interval = null;
+        }
+
+        startAutoSlide();
+    });
+    return this;
+};
+$(".i-main-presentation-player-ppt").ppt();

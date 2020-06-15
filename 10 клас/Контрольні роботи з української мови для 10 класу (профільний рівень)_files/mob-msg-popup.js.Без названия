@@ -1,0 +1,97 @@
+$.fn.mobMsgPopup = function (options) {
+
+    options = $.extend({
+        showOn: '.v-news-comments',
+        padOn: '.a-similar-news',
+        paddingClass: "v-news-reg-banner-fixed",
+        cookie: 'i-news-popup-disabled',
+        timeout: 'midnight',
+        guestsOnly: false,
+        contAdd: ''
+    }, options);
+    if (options.guestsOnly) {
+        if (vo.user_id) {
+            return;
+        }
+    }
+    var cookie = options.cookie;
+
+    function readCookie(name, c, C, i) {
+        c = document.cookie.split('; ');
+        for (i = c.length - 1; i >= 0; i--) {
+            C = c[i].split('=');
+            if (C[0] === name) {
+                return C[1];
+            }
+        }
+    }
+
+    if(!options.contAdd){
+        return;
+    }
+
+
+    /*if (readCookie(cookie)) {
+        return;
+    }*/
+    var self = this;
+    var $show = $(options.showOn);
+    var $window = $(window);
+    var $footer = $(".footer");
+    var $paddingFix = $(options.padOn);
+    if (!$paddingFix.length) {
+        $paddingFix = $show;
+    }
+
+    self.find('.ag-content').html(options.contAdd);
+    self.slideDown('slow');
+
+
+    function fixSidebar() {
+        if (self.is(":visible")) {
+            var padding = self.height() + 20;
+        } else {
+            padding = 0;
+        }
+        $(".theiaStickySidebar").css({paddingBottom: padding});
+        if (vo.fixSidebar) {
+            vo.fixSidebar();
+        }
+    }
+
+    function update() {
+        var offset = $show.offset();
+        if (offset) {
+            var bottom = $window.scrollTop() + $window.height();
+            if (offset.top < bottom) {
+                self.slideDown('slow').queue(function (next) {
+                    fixSidebar();
+                    next();
+                });
+                $paddingFix.addClass(options.paddingClass);
+            }
+        }
+        var footerOffset = $footer.offset();
+        if (footerOffset) {
+            if (footerOffset.top < bottom) {
+                self.css({bottom: bottom - footerOffset.top});
+            } else {
+                self.css({bottom: 0});
+            }
+        }
+    }
+
+    function close() {
+        self.slideUp().queue(function (next) {
+            fixSidebar();
+            next();
+        });
+        self.removeClass('show');
+        $paddingFix.removeClass(options.paddingClass);
+        $window.off('scroll resize', update);
+        fixSidebar();
+        vo.ajax(null, '/ext/user/msg-close', null);
+    }
+
+    this.find('.i-close').click(close);
+};
