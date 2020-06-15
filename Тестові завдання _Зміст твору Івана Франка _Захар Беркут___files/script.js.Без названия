@@ -1,0 +1,642 @@
+function updateFilter(type){
+    if($('#controller').val() == 'test'){
+        $('.h1-block').html('Онлайн тести');
+        request(getUrlTest(type));
+    }else{
+        $('.h1-block').html('Бібліотека розробок');
+        request(getUrl(type));
+    }
+
+
+}
+function updateType(type){
+    if($('#controller').val() == 'test'){
+        $('.h1-block').html('Онлайн тести');
+    }else{
+        $('.h1-block').html('Бібліотека розробок');
+    }
+    $('.type').removeClass('active');
+    var type_id = $(type).addClass('active').attr('data-type-id');
+    if(type_id > 0){
+        var url = getUrl(4);
+        //url += '/type-'+type_id;
+        request(url);
+    }else{
+        var url = getUrl(type);
+        request(url);
+    }
+}
+function getGrade(item){
+    //console.log(item.value);
+    //alert(1);
+    if(item){
+                    $('.bid-exist .loader').show();
+                    $('.bid-exist .form').hide();
+    $.get( '/api/events/'+item+'/grade', function( data ) {
+        //    $('.bid-exist').hide();
+        //    $('.subj').show();
+    //    $('.no-subj').hide();
+
+            $('.gradesList').html('');
+            $('.bidsList').html('');
+            //if(data.eventGrades.length > 0){
+                $.each(data.eventGrades, function( index, value ) {
+                    $('.gradesList').append('<option value="'+index+'">'+value+'</option>');
+                });
+                $('.btn-submit-bid').show();
+            //}
+            if(data.freeBids.length > 0){
+                $('.bid-exist').show();
+                $('.bidsList').append('<option value="0">Оберіть клас</option>');
+                $('.bid-exist .loader').hide();
+                $('.bid-exist .form').show();
+                $.each(data.freeBids, function( index, value ) {
+                    $('.bidsList').append('<option value="'+value.id+'">'+value.grade_id+'-'+value.group+'</option>');
+                });
+
+            }else{
+
+                $('.bid-exist').hide();
+                $('.bidsList').append('<option value="0" selected></option>');
+            }
+        },'json');
+    }else{
+            $('.btn-submit-bid').hide();
+        //$('.no-subj').show();
+        //$('.subj').hide();
+    }
+}
+
+function getUrl(type){
+        var attrs = [];
+        attrs.push($('#subject_id').val());
+        attrs.push((type == 1 ? false : $('#grade_id').val()) );
+        attrs.push((type == 1 || type == 2 ? false : $('#book_id').val()) );
+        attrs.push(type == 1 || type == 2 || type == 3  ? false : ($('#paragraph_id').val()) );
+        attrs.push($('.type.active').attr('data-type-id'));
+        attrs.push($('input#documentsearch-inclusive').prop('checked'));
+        attrs.push($('input#documentsearch-new_school').prop('checked'));
+        attrs.push($('#documentsearch-query').val());
+        var url = '/'+$('#controller').val();
+        console.log(attrs);
+        for(var i = 0; i<attrs.length; i++){
+            if(attrs[i] && attrs[i] != 'Оберіть підручник...' && attrs[i] != 'Оберіть урок...' && attrs[i] != 'Клас...' && attrs[i] != 'Оберіть предмет...'){
+                switch (i) {
+                    case 1:
+                        url += '/klas-'+attrs[i];
+                        break;
+                    case 2:
+                        if(attrs[i] > 0){
+                            url += '/pidruchnyk-'+attrs[i];
+                        }
+                        break;
+                    case 3:
+                        if(attrs[i] > 0){
+                            url += '/tema-'+attrs[i];
+                        }
+                        break;
+                    case 4:
+                        if(attrs[i] > 0){
+                            url += '/typ-'+attrs[i];
+                        }
+                        break;
+                    case 5:
+                        if(attrs[i] == true){
+                            url += '?inclusive=true';
+                        }
+                        break;
+                    case 6:
+                        if(attrs[i] == true){
+                            url += (attrs[5] == true ? '&' : '?')+'new_school=true';
+                        }
+                        break;
+                    case 7:
+                        if(attrs[i] !=''){
+                            url += (attrs[6] == true ? '&' : '?')+'q='+attrs[i];
+                        }
+                        break;
+                    default:
+                        url += '/'+attrs[i];
+                        break;
+                }
+            }
+            if(i == attrs.length-1){
+                return url;
+            }
+        }
+}
+
+function getUrlTest(type){
+        var attrs = [];
+        attrs.push($('#subject_id').val());
+        attrs.push($('#grade_id').val());
+        attrs.push($('#documentsearch-query').val());
+        var url = '/'+$('#controller').val();
+        console.log(attrs);
+        for(var i = 0; i<attrs.length; i++){
+            if(attrs[i] && attrs[i] != 'Оберіть предмет...' && attrs[i] != 'Клас...'){
+                switch (i) {
+                    case 1:
+                        url += '/klas-'+attrs[i];
+                        break;
+                    case 2:
+                        if(attrs[i] !=''){
+                            url += (attrs[2] == true ? '&' : '?')+'q='+attrs[i];
+                        }
+                        break;
+                    default:
+                        url += '/'+attrs[i];
+                        break;
+                }
+            }
+            if(i == attrs.length-1){
+                return url;
+            }
+        }
+}
+/*
+$(document).on('click', '.pagination li a', function(e){
+    e.preventDefault();
+    $('.pagination li').removeClass('active');
+    $(this).parent('li').addClass('active');
+    var url = $(this).attr('href');
+    request(url);
+}); */
+
+$(document).on('click', '.search-query-button', function(e){
+    e.preventDefault();
+    var query = $('#documentsearch-query').val();
+    request(getUrl(5));
+});
+
+function clearSearchForm(){
+    $('#documentsearch-query').val('');
+    request(getUrl(5));
+}
+function request(url){
+     $( ".items" ).html('<p class="text-center"><i class="fa fa-spinner fa-spin fa-3x fa-fw"></i></p>');
+    $.get( url, function( data ) {
+      $( ".items" ).html( data );
+    });
+    window.History.pushState({url: url}, document.title, url);
+    //setTimeout(function(){
+        //check(url);
+    //},500);
+}
+function loadPosts(){
+    var page = $('.load-more').attr('data-page');
+    $('.load-more-block').remove();
+    var url = '?page='+page;
+    requestJournal(url, page);
+}
+function requestJournal(url, page){
+    $( ".load-more-block"+page+" .text-center" ).html('<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>');
+    $.get( url, function( data ) {
+        $( ".load-more-block"+page).remove();
+      $( ".more-posts"+page ).html( data );
+    });
+}
+
+function check(url){
+    var attrs = [];
+    attrs.push($('#subject_id').val());
+    attrs.push($('#grade_id').val());
+    attrs.push($('#book_id').val());
+    attrs.push($('#paragraph_id').val());
+    var url = '/'+$('#controller').val();
+    for(var i = 0; i<attrs.length; i++){
+        if(attrs[i] && attrs[i] != 'Оберіть підручник...' && attrs[i] != 'Оберіть урок...' && attrs[i] != 'Клас...' && attrs[i] != 'Оберіть предмет...'){
+            if(i == 1){
+                url += '/klas-'+attrs[i];
+            }else{
+                url += '/'+attrs[i];
+            }
+        }
+        console.log(url);
+        if(i == attrs.length-1){
+            window.History.pushState({url: url}, document.title, url);
+        }
+    }
+}
+
+var slider = {
+    current:1,
+    next:function(){
+
+        if(this.current == $('.slide').length){
+            return false;
+        }
+
+        this.current = this.current+1;
+        $('.slide').removeClass('show').addClass('hide');
+        $('.slide'+this.current).removeClass('hide').addClass('show');
+        $('.current').text(this.current);
+        $('.next').removeClass('disabled');
+        $('.prev').removeClass('disabled');
+        if(this.current == $('.slide').length){
+            $('.next').addClass('disabled');
+        }
+    },
+    prev:function(){
+        if(this.current == 1){
+            return false;
+        }
+        this.current = this.current-1;
+        $('.prev').removeClass('disabled');
+        $('.slide').removeClass('show').addClass('hide');
+
+        $('.slide'+this.current).removeClass('hide').addClass('show');
+        $('.current').text(this.current);
+        $('.next').removeClass('disabled');
+        $('.prev').removeClass('disabled');
+        if(this.current == 1){
+            $('.prev').addClass('disabled');
+            return false;
+        }
+
+    }
+}
+
+var bookmark = {
+    save:function(document_id, clearItem = false){
+         $.ajax({
+              type: "POST",
+              url: '/api/bookmarks/save/'+document_id,
+              data: { _csrf: document.head.querySelector("[name=csrf-token]").content },
+              success:function(result){
+                  if(result === true){
+                     if(clearItem == true){
+                        $('.item'+document_id).remove();
+                    }else{
+                        $('.bookmark-file a').removeClass('active').find('span').text('Зберегти на потім');
+                    }
+
+                  }else{
+                       $('.bookmark-file a').addClass('active').find('span').text('Збережено');
+                  }
+              },
+              error:function(result){}
+         });
+    },
+    create:function(document_id){
+         $.ajax({
+              type: "POST",
+              url: '/api/bookmarks',
+              data: { document_id: document_id, _csrf: document.head.querySelector("[name=csrf-token]").content },
+              success:function(result){},
+              error:function(result){}
+         });
+    },
+    delete:function(bookmark_id){
+         $.ajax({
+              type: "DELETE",
+              url: '/api/bookmarks/'+bookmark_id,
+              data: { _csrf: document.head.querySelector("[name=csrf-token]").content },
+              success:function(result){
+
+              },
+              error:function(result){}
+         });
+    },
+}
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+})
+
+jQuery('#spreadsheet').popover({
+        selector: '.ssppq',
+        container: '#spreadsheet',
+        trigger: 'hover',
+        placement: 'bottom',
+        html: true,
+        title: function(){
+            var q = jQuery(this).attr('data-title');
+            var dif = jQuery(this).attr('data-difficulty');
+            var difstr = '';
+            /*
+            for (var i = 0; i < 5; i++ ) {
+                difstr += difstr > i
+                    ? '<i class="fa fa-star filled" aria-hidden="true"></i>'
+                    : '<i class="fa fa-star" aria-hidden="true"></i>';
+            } */
+            return q;
+        },
+        content: function() {
+            var c = jQuery(this).find('.item-content').html();
+            //var c = $scope.curAnswers()[qid].question.content;
+            var m = c.match(/\\\(.*?\\\)/g);
+            if ( m !== null ) {
+                for (var i = 0; i < m.length; i++) {
+                    c = c.replace(m[i], katex.renderToString(m[i].substr(2, m[i].length - 4)));
+                }
+            }
+            return c;
+        },
+});
+
+function get_browser_info(){
+    var ua=navigator.userAgent,tem,M=ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+    if(/trident/i.test(M[1])){
+        tem=/\brv[ :]+(\d+)/g.exec(ua) || [];
+        return {name:'IE ',version:(tem[1]||'')};
+        }
+    if(M[1]==='Chrome'){
+        tem=ua.match(/\bOPR\/(\d+)/)
+        if(tem!=null)   {return {name:'Opera', version:tem[1]};}
+        }
+    M=M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+    if((tem=ua.match(/version\/(\d+)/i))!=null) {M.splice(1,1,tem[1]);}
+    return {
+      name: M[0],
+      version: M[1]
+    };
+ }
+$(function(){
+
+    var browser=get_browser_info();
+        var browsers = {
+            'Chrome':{'min':41},
+            'Firefox':{'min':45},
+            'Opera':{'min':45},
+            'Android Webview':{'min':45},
+            'YaBrowser':{'min':15},
+            'Safari':{'min':9}
+        };
+        console.log(browser.version);
+    if(browsers.hasOwnProperty(browser.name)){
+
+        if(browser.version >= browsers[browser.name].min){
+            $('.start-link').show();
+            $('.browsers-list').hide();
+        }else{
+
+        }
+    }
+    //$(".store-payblock").pin({activeClass:'store-pinned'});
+    //$(".webinar-embed").pin({activeClass:'webinar-pinned'});
+    //$(".conference-menu").pin();
+
+
+
+
+});
+
+function scrollToDiv(to){
+    //$(click).click(function() {
+        $('html, body').animate({
+            scrollTop: $(to).offset().top
+        }, 800);
+    //});
+}
+
+/*
+$(document).ready(function () {
+
+    //var start = $('.clockdiv').attr('data-start');
+    var remaining = $('#clockdiv').attr('data-remaining');
+    var endtime = (new Date(new Date().getTime() + parseInt(remaining))).getTime();
+//    console.log(end);
+    initializeClock('clockdiv', endtime, remaining);
+}); */
+
+
+function getTimeRemaining(endtime, remaining) {
+  var t =  endtime - new Date().getTime();
+  //console.log('time '+t);
+  var seconds = Math.floor((t / 1000) % 60);
+  var minutes = Math.floor((t / 1000 / 60) % 60);
+  var hours = Math.floor((t / (1000 * 60 * 60)) % 24);
+  var days = Math.floor(t / (1000 * 60 * 60 * 24));
+  return {
+    'total': t,
+    'days': days,
+    'hours': hours,
+    'minutes': minutes,
+    'seconds': seconds
+  };
+}
+/*
+function initializeClock(id, endtime, remaining) {
+  var clock = document.getElementById(id);
+  var daysSpan = clock.querySelector('.days');
+  var hoursSpan = clock.querySelector('.hours');
+  var minutesSpan = clock.querySelector('.minutes');
+  var secondsSpan = clock.querySelector('.seconds');
+
+  function updateClock() {
+    var t = getTimeRemaining(endtime, remaining);
+
+    daysSpan.innerHTML = t.days;
+    hoursSpan.innerHTML = ('0' + t.hours).slice(-2);
+    minutesSpan.innerHTML = ('0' + t.minutes).slice(-2);
+    secondsSpan.innerHTML = ('0' + t.seconds).slice(-2);
+
+    if (t.total <= 0) {
+      clearInterval(timeinterval);
+    }
+  }
+
+  updateClock();
+  var timeinterval = setInterval(updateClock, 1000);
+} */
+
+
+
+$(function(){
+    $('.modelButton').click(function(){
+        var modelId = $(this).attr('data-model-id');
+        $('#'+modelId).modal('show')
+            .find('#modelContent')
+            .html('<div class="loader text-center  animated infinite pulse" style="color:#f48617"><i class="fa fa-spinner fa-spin fa-3x fa-fw" style="font-size:90px;"></i></div>')
+            .load($(this).attr('value'));
+    });
+});
+
+
+
+function scrollToDiv(to){
+    //$(click).click(function() {
+        $('html, body').animate({
+            scrollTop: $(to).offset().top-60
+        }, 800);
+    //});
+}
+
+$(function(){
+    $(window).resize(function () {
+        $('.pub-teachers-slider').not('.slick-initialized').slick('resize');
+    });
+
+    $(window).on('orientationchange', function () {
+        $('.pub-teachers-slider').not('.slick-initialized').slick('resize');
+    });
+    $('.pub-cert-slider').slick({
+      infinite: false,
+      slidesToShow: 4,
+      slidesToScroll: 1,
+      responsive: [
+        {
+          breakpoint: 1300,
+          settings: {
+              infinite: false,
+              slidesToShow: 2,
+              slidesToScroll: 1
+          }
+        },
+        {
+          breakpoint: 992,
+          settings: {
+              infinite: false,
+              slidesToShow: 1,
+              slidesToScroll: 1
+          }
+        },
+        {
+          breakpoint: 660,
+          settings: {
+              infinite: false,
+              slidesToShow: 1,
+              slidesToScroll: 1
+          }
+        }
+      ]
+    });
+    $('.pub-reviews-slider').slick({
+      infinite: false,
+      slidesToShow: 2,
+      slidesToScroll: 1,
+      responsive: [
+        {
+          breakpoint: 1300,
+          settings: {
+              infinite: false,
+              slidesToShow: 2,
+              slidesToScroll: 1
+          }
+        },
+        {
+          breakpoint: 992,
+          settings: {
+              infinite: false,
+              slidesToShow: 1,
+              slidesToScroll: 1
+          }
+        },
+        {
+          breakpoint: 660,
+          settings: {
+              infinite: false,
+              slidesToShow: 1,
+              slidesToScroll: 1
+          }
+        }
+      ]
+    });
+    $('.pub-teachers-slider').slick({
+      infinite: true,
+      slidesToShow: 4,
+      slidesToScroll: 1,
+      responsive: [
+        {
+          breakpoint: 1300,
+          settings: {
+              infinite: true,
+              slidesToShow: 3,
+              slidesToScroll: 1
+          }
+        },
+        {
+          breakpoint: 992,
+          settings: {
+              infinite: true,
+              slidesToShow: 2,
+              slidesToScroll: 1
+          }
+        },
+        {
+          breakpoint: 660,
+          settings: {
+              infinite: true,
+              slidesToShow: 1,
+              slidesToScroll: 1
+          }
+        }
+      ]
+    });
+
+        $('.masonry-grid').masonry({
+          // options
+          itemSelector: '.masonry-grid-item',
+
+        });
+    // Set the date we're counting down to"Jan 5, 2021 15:37:25"
+    var countDownDate = new Date($('.timer').attr('data-timer-end')).getTime();
+
+    // Update the count down every 1 second
+    var x = setInterval(function() {
+
+      // Get todays date and time
+      var now = new Date().getTime();
+
+      // Find the distance between now and the count down date
+      var distance = countDownDate - now;
+
+      // Time calculations for days, hours, minutes and seconds
+      var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      // Display the result in the element with id="demo"
+      $('.timer-day').text((days.toString().length == 1 ? '0'+days : days));
+      $('.timer-hours').text((hours.toString().length == 1 ? '0'+hours : hours));
+      $('.timer-minutes').text((minutes.toString().length == 1 ? '0'+minutes : minutes));
+      $('.timer-seconds').text((seconds.toString().length == 1 ? '0'+seconds : seconds));
+
+      // If the count down is finished, write some text
+      if (distance < 0) {
+        clearInterval(x);
+         $('.timer').html('');
+      }
+    }, 1000);
+    });
+
+// jQuery plugin to prevent double submission of forms
+jQuery.fn.preventDoubleSubmission = function() {
+  $(this).on('submit',function(e){
+    var $form = $(this);
+
+    if ($form.data('submitted') === true) {
+      // Previously submitted - don't submit again
+      e.preventDefault();
+    } else {
+      // Mark it so that the next submit can be ignored
+      $form.data('submitted', true);
+    }
+  });
+
+  // Keep chainability
+  return this;
+};
+
+function previewVideo(video_id,element_id){
+    $('.el-'+element_id).html('<div class="embed-responsive embed-responsive-16by9"><iframe  src="https://www.youtube.com/embed/'+video_id+'?showinfo=0&rel=0&modestbranding=1&autoplay=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>');
+}
+function loadCourse(grade){
+//    var page = $('.load-more').attr('data-page');
+//    $('.load-more-block').remove();
+
+    $('.pub-course-picker a').removeClass('active');
+    $('.pub-course-picker .grade'+grade).addClass('active');
+    var url = '/courses?grade='+grade
+    requestCourse(url);
+}
+function requestCourse(url){
+    //$( ".load-more-block"+page+" .text-center" ).html('<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>');
+     $( ".courses-ajax").removeClass('hide').html('<div class="course-items"><div class="row"><div class="col-md-6"><div class="shad-block course-item"><div class="row"><div class="col-md-12"><div class="course-info-block"><div class="row"><div class="col-md-8 col-sm-7 col-xs-6"><div class="item-start"><span class="item-start-info" style="background:#f1f1f1;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div></div><div class="col-md-4 col-sm-5 col-xs-6"><div class="text-right pub-course-price" style="background:#f1f1f1;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></div></div><div class="item-name" style="background:#f1f1f1;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></div></div></div><div class="course-author-block"><div class="course-author-name" style="background:#f1f1f1;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div></div></div></div></div></div>');
+    $.get( url, function( data ) {
+    //    $( ".load-more-block"+page).remove();
+    //console.log(data);
+      $( ".courses-ajax").removeClass('hide').html( data );
+    });
+}

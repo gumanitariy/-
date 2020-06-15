@@ -1,0 +1,71 @@
+Share = {
+    vkontakte: function(purl, ptitle, pimg, text) {
+        url  = 'http://vk.com/share.php?';
+        url += 'url='          + encodeURIComponent(purl);
+        if(ptitle) url += '&title='       + encodeURIComponent(ptitle);
+        if(text) url += '&description=' + encodeURIComponent(text);
+        if(pimg) url += '&image='       + encodeURIComponent(pimg);
+        url += '&noparse=true';
+        Share.popup(url);
+    },
+    odnoklassniki: function(purl, text) {
+        url  = 'http://www.odnoklassniki.ru/dk?st.cmd=addShare&st.s=1';
+        if(text) url += '&st.comments=' + encodeURIComponent(text);
+        url += '&st._surl='    + encodeURIComponent(purl);
+        Share.popup(url);
+    },
+    facebook: function(purl, ptitle, pimg, text) {
+        url  = 'http://www.facebook.com/sharer.php?s=100';
+        if(ptitle) url += '&p[title]='     + encodeURIComponent(ptitle);
+        if(text) url += '&p[summary]='   + encodeURIComponent(text);
+        url += '&u='       + encodeURIComponent(purl);
+        //if(pimg) url += '&p[images][0]=' + encodeURIComponent(pimg);
+        Share.popup(url);
+    },
+    twitter: function(purl, ptitle) {
+        url  = 'http://twitter.com/share?';
+        if(ptitle) url += 'text='      + encodeURIComponent(ptitle);
+        url += '&url='      + encodeURIComponent(purl);
+        url += '&counturl=' + encodeURIComponent(purl);
+        Share.popup(url);
+    },
+    google: function(purl) {
+        url  = 'https://plus.google.com/share?';
+        url += 'url='      + encodeURIComponent(purl);
+        Share.popup(url);
+    },
+    mailru: function(purl, ptitle, pimg, text) {
+        url  = 'http://connect.mail.ru/share?';
+        url += 'url='          + encodeURIComponent(purl);
+        if(ptitle) url += '&title='       + encodeURIComponent(ptitle);
+        if(text) url += '&description=' + encodeURIComponent(text);
+        if(pimg) url += '&imageurl='    + encodeURIComponent(pimg);
+        Share.popup(url)
+    },
+    telegram: function(purl, ptitle) {
+        url  = 'https://t.me/share/url?';
+        url += 'url='          + encodeURIComponent(purl);
+        if(ptitle) url += '&text='       + encodeURIComponent(ptitle);
+        Share.popup(url)
+    },
+    viber: function(purl, ptitle) {
+        url  = 'viber://forward?text=';
+        url += encodeURIComponent(ptitle + " " + purl);
+        window.location.href = url;
+    },
+    popup: function(url) {
+        window.open(url,'','toolbar=0,status=0,width=626,height=436');
+    },
+    log: function(type, id, network){
+         $.ajax({type: "POST",
+              url: '/site/share',
+              data: { id: id, type:type, network:network, _csrf: document.head.querySelector("[name=csrf-token]").content },
+              success:function(result){},
+              error:function(result){}
+         });
+    }
+};
+
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+});

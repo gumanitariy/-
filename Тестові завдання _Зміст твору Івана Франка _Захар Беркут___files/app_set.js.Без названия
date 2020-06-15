@@ -1,0 +1,81 @@
+var app = angular.module('lib', [],  function($httpProvider) {
+
+
+});
+app.controller('SetCtrl',function ($scope, $sce, $location, $window, $interval, SetFactory) {
+    $scope.newSet = {name:null,document_id:null, private:'0'};
+    $scope.init = function(document_id){
+        $scope.document_id = document_id;
+        $scope.getSets($scope.document_id);
+    }
+    $scope.getSets = function(){
+        SetFactory.getSets($scope.document_id).then(function successCallback(response) {
+            $scope.sets = response.data.sets;
+            $scope.exists = response.data.exists;
+        }, function errorCallback(response) {
+            //$location.path('/');
+            console.log(response);
+        });
+    }
+    $scope.createSet = function(){
+        if($scope.newSet.name){
+            SetFactory.createSet($scope.newSet).then(function successCallback(response) {
+                    $scope.getSets();
+                    $scope.newSet.name = null;
+            }, function errorCallback(response) {
+                //$location.path('/');
+                console.log(response);
+            });
+        }
+    }
+
+    $scope.checkInSet = function(id){
+        var res =  $scope.exists.filter(obj => {
+          return obj.set_id === id
+        })
+        return (res[0] ? true : false);
+    }
+
+    $scope.setDocumentToSet = function(document_id, set_id){
+        SetFactory.setDocumentToSet(document_id, set_id).then(function successCallback(response) {
+            $scope.getSets($scope.document_id);
+        }, function errorCallback(response) {
+            //$location.path('/');
+            console.log(response);
+        });
+    }
+});
+
+app.factory('SetFactory', function ($http) {
+    var getSets = function (id) {
+        //return data;
+        return $http({
+            method: 'GET',
+            url: '/api/sets?document_id='+id
+        })
+    }
+
+    var createSet = function(data){
+        data._csrf = $('.modal-csrf').val();
+        return $http({
+            method: 'POST',
+            url: '/api/sets',
+            data: data
+        })
+    }
+
+    var setDocumentToSet = function(document_id, set_id){
+        var data = {document_id: document_id, set_id:set_id};
+        data._csrf = $('.modal-csrf').val();
+        return $http({
+            method: 'POST',
+            url: '/api/sets/add-to-set/'+set_id,
+            data: data
+        })
+    }
+    return {
+        getSets: getSets,
+        createSet: createSet,
+        setDocumentToSet: setDocumentToSet
+    }
+});

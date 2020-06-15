@@ -1,0 +1,80 @@
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (var i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+$(function(){
+    var reg;
+    var sub;
+    if ('serviceWorker' in navigator) {
+      console.log('Service Worker is supported');
+      navigator.serviceWorker.register('/sworker.js').then(function() {
+        return navigator.serviceWorker.ready;
+      }).then(function(serviceWorkerRegistration) {
+        reg = serviceWorkerRegistration;
+        console.log('Service Worker is ready :^)', reg);
+       setTimeout(function(){
+           if(reg){
+                if(!localStorage.getItem('subscribed') || localStorage.getItem('subscribed') == false){
+                   reg.pushManager.subscribe({userVisibleOnly: true}).
+                    then(function(pushSubscription){
+                      sub = pushSubscription;
+                      console.log('Subscribed! Endpoint:', sub.endpoint);
+                      $.post('/api/push/subscribe',{endpoint:sub.endpoint},function(response){
+                        //console.log(response);
+                        localStorage.setItem('subscribed', true);
+                        localStorage.setItem('push', sub.endpoint);
+                        });
+                    });
+                }
+            }
+        },2000);
+      }).catch(function(error) {
+        console.log('Service Worker Error :^(', error);
+      });
+    }
+
+});
+
+/*var reg;
+var sub;
+if ('serviceWorker' in navigator) {
+  console.log('Service Worker is supported');
+  navigator.serviceWorker.register('/sworker.js').then(function() {
+    return navigator.serviceWorker.ready;
+  }).then(function(serviceWorkerRegistration) {
+    reg = serviceWorkerRegistration;
+    console.log('Service Worker is ready :^)', reg);
+  }).catch(function(error) {
+    console.log('Service Worker Error :^(', error);
+  });
+}
+function subscribe() {
+    if(reg){
+        reg.pushManager.subscribe({userVisibleOnly: true}).
+        then(function(pushSubscription){
+          sub = pushSubscription;
+          console.log('Subscribed! Endpoint:', sub.endpoint);
+          $.post('/push/subscribe',{endpoint:sub.endpoint},function(response){
+            console.log(response);
+            localStorage.setItem('subscribed', true);
+          });
+        });
+    }
+}
+
+$(function(){
+   setTimeout(function(){
+     if(!localStorage.getItem('subscribed') || localStorage.getItem('subscribed') == false){ subscribe(); }
+   },2000);
+*/

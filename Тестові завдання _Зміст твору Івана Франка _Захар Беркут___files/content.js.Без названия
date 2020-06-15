@@ -1,0 +1,20 @@
+$(document).ready(function(){;
+			var seoContent = {"terms":"PGEgaHJlZj0iL3BhZ2UvdGVybXMtb2YtdXNlIj7Qo9C80L7QstC4INC60L7RgNC40YHRgtGD0LLQsNC90L3RjzwvYT4=",
+							"privacy":"PGEgaHJlZj0iL3BhZ2UvcHJpdmFjeS1wb2xpY3kiPtCf0L7Qu9GW0YLQuNC60LAg0LrQvtC90YTRltC00LXQvdGG0ZbQudC90L7RgdGC0ZY8L2E+",
+							"contact":"PGEgaHJlZj0iL3BhZ2UvY29udGFjdC11cyI+0JfQstC+0YDQvtGC0L3QuNC5INC30LIn0Y/Qt9C+0Lo8L2E+",
+							"about":"PGEgaHJlZj0iL3BhZ2UvYWJvdXQiPtCf0YDQviDQv9GA0L7QtdC60YI8L2E+"};
+
+
+			$('[hashstring]').each(function(){
+				var key = $(this).attr("hashstring");
+
+				if($(this).attr("hashtype") == 'href'){
+					$(this).attr('href', Base64.decode(seoHrefs[key]));
+				}else{
+					var content = Base64.decode(seoContent[key]);
+					$(this).replaceWith(content);
+				}
+
+			});
+			$(document).trigger( "renderpage.finish");
+		});

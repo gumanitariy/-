@@ -1,0 +1,109 @@
+(function( $ ){
+
+    $.fn.dependedSelect = function( options ) {
+
+
+        var settings = $.extend( {
+            method: 'get',
+            url: false,
+            destSelector: false,
+            callback : false,
+            event: 'change',
+            getData: false,
+            searchParam: 'id',
+            keyParam: 'id',
+            valParam: 'name',
+            forceLoad: false,
+            preselectedValue: false,
+            prompt: false
+        }, options);
+
+        var self = this;
+        /*if((!settings.destSelect && !settings.callback) || !settings.url)
+            throw "error configuration, callback or destSelect must be set";*/
+
+        var loadFn = function () {
+            var data = {};
+            data[settings.searchParam] = self.val();
+            $.ajax({
+                method: settings.method,
+                url: settings.url,
+                dataType: 'json',
+                data: data,
+                success: function (result) {
+                    var htm = settings.prompt
+                        ? ('<option value="">' + settings.prompt + '</option>')
+                        : '';
+                    for(var i in result) {
+                        if(settings.preselectedValue !== false
+                            && result[i][settings.keyParam] == settings.preselectedValue) {
+                            htm += '<option selected value="' + result[i][settings.keyParam] + '">'
+                                + result[i][settings.valParam] + '</option>';
+                        } else {
+                            htm += '<option value="' + result[i][settings.keyParam] + '">'
+                                + result[i][settings.valParam] + '</option>';
+                        }
+                    }
+
+                    $(settings.destSelector).html(htm);
+
+                    if(settings.callback)
+                        settings.callback(result, self, $(settings.destSelector));
+                }
+            });
+        };
+
+        this.on(settings.event, loadFn);
+        if(settings.forceLoad)
+            loadFn();
+
+        return self;
+    };
+
+    $.fn.sthAlert = function (html) {
+        /*var self = this;
+
+        var _containerId = 'sth_alert_container';
+        var container = $('#' + _containerId);
+        if(!container.length) {
+            $('body').append('<div id="' + _containerId + '" style="position: fixed;top: 60px;z-index: 999;" ></div>');
+            container = $('#' + _containerId);
+        }
+
+        var alert = $('<div class="sth-alert">' + html + '</div>');
+        container.append(alert);
+
+        setTimeout(function() {
+            alert.remove();
+        }, 1000);
+
+        return self;*/
+    };
+
+    $.fn.buffer = function () {
+        var self = this;
+        return self.each(function (i,el) {
+            el = $(el);
+            el.on('click', function(e) {
+                e.preventDefault();
+                var t = $(el.attr('data-target'));
+                if(t.length) {
+                    var te = $('<textarea style="height: 0;width: 0;opacity: 0;">' + t.text() + '</textarea>');
+                    $('body').append(te);
+                    te.select();
+                    document.execCommand('copy');
+                    te.remove();
+                    self.trigger('copied.sth.buffer',t.text());
+                    //console.log(t.text());
+                }
+            });
+        });
+    };
+
+
+    //enable buffer by data-attribute
+    setTimeout(function () {
+        $('[data-toggle=buffer]').buffer();
+    }, 1000);
+
+})( jQuery );
